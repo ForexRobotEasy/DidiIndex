@@ -1,0 +1,95 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                     DidiIndex.mq5 |
+//|                                     Copyright 2022, Forex Robot Easy Team |
+//|                                      https://www.forexroboteasy.com |
+//+------------------------------------------------------------------+
+#property copyright 'Copyright 2022, Forex Robot Easy Team'
+#property link      'https://www.forexroboteasy.com'
+
+// Moving Average periods
+input int FAST_PERIOD = 3;
+input int NORMALIZED_PERIOD = 8;
+input int SLOW_PERIOD = 20;
+
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Add indicator buffers
+   SetIndexBuffer(0, BuyBuffer);
+   SetIndexBuffer(1, SellBuffer);
+
+   // Set up indicator labels
+   SetIndexLabel(0, 'Buy');
+   SetIndexLabel(1, 'Sell');
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+{
+   int limit;
+   if (prev_calculated > rates_total || prev_calculated <= 0)
+      limit = rates_total - FAST_PERIOD - NORMALIZED_PERIOD - SLOW_PERIOD + 1;
+   else
+      limit = rates_total - prev_calculated;
+
+   // Calculate Moving Averages
+   for (int i = limit; i < rates_total; i++)
+   {
+      double fast_ma = iMA(NULL, 0, FAST_PERIOD, 0, MODE_SMA, PRICE_CLOSE, i);
+      double normalized_ma = iMA(NULL, 0, NORMALIZED_PERIOD, 0, MODE_SMA, PRICE_CLOSE, i);
+      double slow_ma = iMA(NULL, 0, SLOW_PERIOD, 0, MODE_SMA, PRICE_CLOSE, i);
+
+      // Detect Agulhada
+      if (fast_ma == normalized_ma && normalized_ma == slow_ma)
+      {
+         // Identify Agulhada Type
+         if (IsSpiderWomansKiss(fast_ma, normalized_ma, slow_ma))
+         {
+            // Spider Woman's Kiss
+            // Additional analysis needed
+            continue;
+         }
+         else
+         {
+            // Buy Needle or Sell Needle
+            if (fast_ma > slow_ma)
+               BuyBuffer[i] = close[i]; // Potential Buy Point
+            else if (fast_ma < slow_ma)
+               SellBuffer[i] = close[i]; // Potential Sell Point
+         }
+      }
+   }
+
+   return(rates_total);
+}
+
+//+------------------------------------------------------------------+
+//| Check if the given Moving Averages form Spider Woman's Kiss       |
+//+------------------------------------------------------------------+
+bool IsSpiderWomansKiss(double fast_ma, double normalized_ma, double slow_ma)
+{
+   // Additional analysis logic here
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Global indicator buffers                                          |
+//+------------------------------------------------------------------+
+double BuyBuffer[];
+double SellBuffer[];
